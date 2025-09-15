@@ -11,12 +11,13 @@ extension/                 # Chrome Extension
 ├── content.js             # 콘텐츠 스크립트 (자동완성 로직)
 ├── popup.html             # 팝업 UI
 ├── popup.js               # 팝업 스크립트
+├── profile.json           # 사용자 프로필 (extension 내부)
 ├── profile.example.json   # 프로필 예시
 ├── icons/                 # 아이콘들
 └── raycast-scripts/       # Raycast 스크립트들
-    ├── fill-naver-forms.js      # Raycast 스크립트
+    ├── fill-naver-forms.js      # Raycast 트리거 스크립트
     ├── fill-naver-setting.json  # 설정 파일
-    └── profile.json             # 사용자 프로필
+    └── profile.json             # 사용자 프로필 (raycast용, 더 이상 사용 안함)
 ```
 
 ## Chrome Extension 설치
@@ -31,15 +32,16 @@ extension/                 # Chrome Extension
 ### 1. Chrome Extension만 사용하는 경우
 
 1. 확장프로그램 설치 후, 확장프로그램 아이콘 클릭
-2. 팝업에서 개인정보 입력 및 저장
+2. 팝업에서 개인정보 입력 및 저장, 또는 `extension/profile.json` 파일에 직접 입력
 3. nid.naver.com 페이지에서:
    - 확장프로그램 팝업의 "자동완성" 버튼 클릭, 또는
-   - 페이지 내 "🚀 자동완성" 버튼 클릭
+   - 페이지 내 "🚀 자동완성" 버튼 클릭, 또는
+   - 우상단 floating button (🚀) 클릭
 
 ### 2. Raycast Script와 함께 사용하는 경우
 
 1. Chrome Extension 설치 완료
-2. `raycast-scripts/profile.json` 파일에 개인정보 입력:
+2. `extension/profile.json` 파일에 개인정보 입력:
 
 ```json
 {
@@ -58,7 +60,7 @@ extension/                 # Chrome Extension
 
 4. 사용방법:
    - nid.naver.com 페이지 열기 (팝업, 백그라운드 탭 모두 가능)
-   - Raycast에서 "Fill Naver Forms" 실행
+   - Raycast에서 "Fill Naver Forms" 실행 (트리거 역할만 수행)
 
 ## 프로필 데이터 형식
 
@@ -90,8 +92,18 @@ extension/                 # Chrome Extension
 - ✅ 폼 필드 자동 매핑 및 완성
 - ✅ Chrome Extension 팝업 인터페이스
 - ✅ 페이지 내 자동완성 버튼
-- ✅ Raycast 스크립트 통합
+- ✅ 우상단 floating button (🚀) - 클릭으로 즉시 자동완성
+- ✅ Raycast 스크립트 통합 (트리거 역할)
+- ✅ Extension 내부에서 프로필 관리
 - ✅ 데이터 로컬 저장 (Chrome Storage API)
+
+## 구조 변경사항
+
+이전 버전에서는 Raycast 스크립트가 프로필 데이터를 읽어서 Extension에 전달했지만, 현재 버전에서는:
+
+- **Extension 내부에서 프로필 관리**: `extension/profile.json`에서 사용자 정보 관리
+- **Raycast는 트리거 역할만**: 단순히 자동완성 시작 신호만 전송
+- **Floating Button 추가**: 페이지 우상단에 항상 표시되는 자동완성 버튼
 
 ## 문제 해결
 
@@ -103,15 +115,12 @@ extension/                 # Chrome Extension
 ### Raycast Script가 작동하지 않는 경우
 1. Chrome이 실행 중인지 확인
 2. nid.naver.com 페이지가 열려 있는지 확인
-3. `profile.json` 파일이 올바른 형식인지 확인
+3. `extension/profile.json` 파일이 올바른 형식인지 확인
 4. Node.js가 설치되어 있는지 확인
+5. Chrome Extension이 설치되어 있는지 확인
 
 ## 보안 주의사항
 
 - 개인정보는 로컬에서만 저장됩니다
 - 외부 서버로 데이터가 전송되지 않습니다
 - Chrome Storage API를 사용하여 안전하게 저장됩니다
-
-## 라이선스
-
-MIT License
