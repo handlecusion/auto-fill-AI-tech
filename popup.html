@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 350px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      margin: 0 0 5px 0;
+      color: #333;
+    }
+    
+    .header p {
+      font-size: 12px;
+      color: #666;
+      margin: 0;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #03c75a;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    .btn-primary {
+      background-color: #03c75a;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: #02b351;
+    }
+    
+    .btn-secondary {
+      background-color: #f5f5f5;
+      color: #333;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #e9e9e9;
+    }
+    
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      text-align: center;
+    }
+    
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    .radio-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 5px;
+    }
+    
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      margin-bottom: 0;
+    }
+    
+    .radio-group input[type="radio"] {
+      width: auto;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>네이버 자동완성</h1>
+    <p>본인인증 정보를 저장하고 자동완성하세요</p>
+  </div>
+  
+  <form id="profileForm">
+    <div class="form-group">
+      <label for="name">이름</label>
+      <input type="text" id="name" name="name" placeholder="홍길동">
+    </div>
+    
+    <div class="form-group">
+      <label for="birthdate">생년월일 (8자리)</label>
+      <input type="text" id="birthdate" name="birthdate" placeholder="19900101" maxlength="8">
+    </div>
+    
+    <div class="form-group">
+      <label>성별</label>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="gender" value="male"> 남자
+        </label>
+        <label>
+          <input type="radio" name="gender" value="female"> 여자
+        </label>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="carrier">통신사</label>
+      <select id="carrier" name="carrier">
+        <option value="">선택하세요</option>
+        <option value="SKT">SKT</option>
+        <option value="KT">KT</option>
+        <option value="LG U+">LG U+</option>
+        <option value="SKT알뜰폰">SKT알뜰폰</option>
+        <option value="KT알뜰폰">KT알뜰폰</option>
+        <option value="LG U+알뜰폰">LG U+알뜰폰</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>국적</label>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="nationality" value="domestic"> 내국인
+        </label>
+        <label>
+          <input type="radio" name="nationality" value="foreign"> 외국인
+        </label>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="phone">전화번호</label>
+      <input type="text" id="phone" name="phone" placeholder="01012345678">
+    </div>
+    
+    <div class="button-group">
+      <button type="button" class="btn btn-secondary" id="fillBtn">자동완성</button>
+      <button type="submit" class="btn btn-primary">저장</button>
+    </div>
+  </form>
+  
+  <div id="status" class="status" style="display: none;"></div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

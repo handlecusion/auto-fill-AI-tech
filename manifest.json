@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Naver ID Auto Fill",
+  "version": "1.0.0",
+  "description": "네이버 본인인증 자동완성 확장프로그램",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://nid.naver.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://nid.naver.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "네이버 자동완성",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["profile.json"],
+      "matches": ["https://nid.naver.com/*"]
+    }
+  ],
+  "externally_connectable": {
+    "matches": ["*://localhost/*"]
+  }
+}

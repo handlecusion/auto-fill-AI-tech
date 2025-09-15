@@ -1,0 +1,26 @@
+{
+  "name": "naver-id-autofill",
+  "version": "1.0.0",
+  "description": "Chrome extension and Raycast script for auto-filling Naver identity verification forms",
+  "main": "background.js",
+  "scripts": {
+    "build": "echo 'No build process needed for this extension'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "chrome-extension",
+    "raycast",
+    "naver",
+    "autofill",
+    "identity-verification"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "manifest": {
+    "manifest_version": 3,
+    "name": "Naver ID Auto Fill",
+    "version": "1.0.0"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
