@@ -1,3 +1,10 @@
 {
-  "chromeExtensionId": ""
+  "chromeExtensionId": "",
+  "browser": "arc",
+  "_browserOptions": {
+    "_comment": "Supported browsers: chrome, arc, dia",
+    "chrome": "Google Chrome",
+    "arc": "Arc",
+    "dia": "DIA"
+  }
 }
