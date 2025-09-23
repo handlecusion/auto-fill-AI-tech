@@ -18,6 +18,37 @@ const os = require('os');
 // Messages DB 경로
 const MESSAGES_DB = path.join(os.homedir(), 'Library/Messages/chat.db');
 
+// 브라우저 설정 읽기 및 검증
+function getBrowserConfig() {
+  try {
+    const settingPath = path.join(__dirname, 'fill-naver-setting.json');
+    if (!fs.existsSync(settingPath)) {
+      console.log('⚠️ Setting file not found, using default browser: Chrome');
+      return { browser: 'chrome', appName: 'Google Chrome' };
+    }
+    
+    const settings = JSON.parse(fs.readFileSync(settingPath, 'utf8'));
+    const browser = settings.browser || 'chrome';
+    
+    const browserConfig = {
+      'chrome': { appName: 'Google Chrome', processName: 'Google Chrome' },
+      'arc': { appName: 'Arc', processName: 'Arc' },
+      'dia': { appName: 'DIA', processName: 'DIA' }
+    };
+    
+    if (!browserConfig[browser]) {
+      console.log(`⚠️ Unsupported browser: ${browser}, using Chrome as fallback`);
+      return { browser: 'chrome', ...browserConfig['chrome'] };
+    }
+    
+    console.log(`🌐 Using browser: ${browserConfig[browser].appName}`);
+    return { browser, ...browserConfig[browser] };
+  } catch (error) {
+    console.log('⚠️ Error reading settings, using default browser: Chrome');
+    return { browser: 'chrome', appName: 'Google Chrome', processName: 'Google Chrome' };
+  }
+}
+
 async function getLatestOTP() {
   try {
     if (!fs.existsSync(MESSAGES_DB)) {
@@ -58,8 +89,164 @@ async function getLatestOTP() {
   }
 }
 
+// 브라우저별 AppleScript 생성 함수들
+function generateChromeScript(tempJsFile, isOTP = false) {
+  return [
+    'tell application "Google Chrome"',
+    '  activate',
+    '  set found to false',
+    '  set windowCount to count of windows',
+    '  repeat with i from 1 to windowCount',
+    '    set currentWindow to window i',
+    '    set tabCount to count of tabs of currentWindow',
+    '    repeat with j from 1 to tabCount',
+    '      set currentTab to tab j of currentWindow',
+    '      if URL of currentTab contains "nid.naver.com" then',
+    '        set active tab index of currentWindow to j',
+    '        set index of currentWindow to 1',
+    '        set jsContent to read POSIX file "' + tempJsFile.replace(/\\/g, '/') + '"',
+    '        tell currentTab',
+    '          execute javascript jsContent',
+    '        end tell',
+    '        set found to true',
+    '        exit repeat',
+    '      end if',
+    '    end repeat',
+    '    if found then exit repeat',
+    '  end repeat',
+    '  if found then',
+    '    return "success"',
+    '  else',
+    '    return "not_found"',
+    '  end if',
+    'end tell'
+  ];
+}
+
+function generateArcScript(tempJsFile, isOTP = false) {
+  return [
+    'tell application "Arc"',
+    '  activate',
+    '  set found to false',
+    '  try',
+    '    -- First try: check if current tab is naver',
+    '    tell front window',
+    '      tell active tab',
+    '        set currentURL to URL',
+    '        if currentURL contains "nid.naver.com" then',
+    '          set jsContent to read POSIX file "' + tempJsFile.replace(/\\/g, '/') + '"',
+    '          execute javascript jsContent',
+    '          set found to true',
+    '        end if',
+    '      end tell',
+    '    end tell',
+    '    ',
+    '    -- Second try: search through all tabs if current tab is not naver',
+    '    if not found then',
+    '      repeat with theWindow in windows',
+    '        repeat with i from 1 to count of tabs of theWindow',
+    '          try',
+    '            set theTab to tab i of theWindow',
+    '            if URL of theTab contains "nid.naver.com" then',
+    '              -- Bring this window to front',
+    '              set index of theWindow to 1',
+    '              -- Execute JavaScript on the tab without switching',
+    '              set jsContent to read POSIX file "' + tempJsFile.replace(/\\/g, '/') + '"',
+    '              tell theTab',
+    '                execute javascript jsContent',
+    '              end tell',
+    '              set found to true',
+    '              exit repeat',
+    '            end if',
+    '          on error',
+    '            -- Skip this tab on error',
+    '          end try',
+    '        end repeat',
+    '        if found then exit repeat',
+    '      end repeat',
+    '    end if',
+    '  on error',
+    '    return "error"',
+    '  end try',
+    '  ',
+    '  if found then',
+    '    return "success"',
+    '  else',
+    '    return "not_found"',
+    '  end if',
+    'end tell'
+  ];
+}
+
+function generateDiaScript(tempJsFile, isOTP = false) {
+  return [
+    '-- DIA browser does not support AppleScript like Chrome/Arc',
+    '-- Using alternative approach: Check if naver tab exists via UI',
+    'tell application "Dia"',
+    '  activate',
+    '  delay 1',
+    'end tell',
+    '',
+    'tell application "System Events"',
+    '  tell process "Dia"',
+    '    try',
+    '      -- Try to find if current tab has naver URL',
+    '      key code 37 using {command down} -- Cmd+L to focus address bar',
+    '      delay 0.5',
+    '      key code 8 using {command down} -- Cmd+C to copy URL',
+    '      delay 0.5',
+    '      set currentURL to (the clipboard as string)',
+    '      ',
+    '      if currentURL contains "nid.naver.com" then',
+    '        -- Found naver tab, now inject script via console',
+    '        key code 123 using {command down, option down} -- Cmd+Option+I for dev tools',
+    '        delay 2',
+    '        ',
+    '        -- Focus console tab',
+    '        key code 8 using {command down, shift down} -- Cmd+Shift+C for console',
+    '        delay 1',
+    '        ',
+    '        -- Read and paste the JavaScript',
+    '        set jsContent to read POSIX file "' + tempJsFile.replace(/\\/g, '/') + '"',
+    '        set the clipboard to jsContent',
+    '        key code 9 using {command down} -- Cmd+V to paste',
+    '        delay 0.5',
+    '        key code 36 -- Enter to execute',
+    '        ',
+    '        delay 1',
+    '        key code 123 using {command down, option down} -- Close dev tools',
+    '        ',
+    '        return "success"',
+    '      else',
+    '        return "not_found"',
+    '      end if',
+    '    on error errMsg',
+    '      return "error: " & errMsg',
+    '    end try',
+    '  end tell',
+    'end tell'
+  ];
+}
+
+function generateBrowserScript(browserConfig, tempJsFile, isOTP = false) {
+  switch (browserConfig.browser) {
+    case 'chrome':
+      return generateChromeScript(tempJsFile, isOTP);
+    case 'arc':
+      return generateArcScript(tempJsFile, isOTP);
+    case 'dia':
+      return generateDiaScript(tempJsFile, isOTP);
+    default:
+      console.log(`⚠️ Unknown browser: ${browserConfig.browser}, using Chrome fallback`);
+      return generateChromeScript(tempJsFile, isOTP);
+  }
+}
+
 async function triggerAutoFill() {
   console.log('🚀 Step 1: Triggering auto-fill process...');
+  
+  // 브라우저 설정 가져오기
+  const browserConfig = getBrowserConfig();
   
   // Enhanced injection JS with OTP monitoring capabilities
   const injectionJs = `
@@ -215,38 +402,8 @@ async function triggerAutoFill() {
   const tempJsFile = path.join(__dirname, '.temp_trigger.js');
   fs.writeFileSync(tempJsFile, injectionJs, 'utf8');
   
-  // Create AppleScript to inject the trigger
-  const appleScriptLines = [
-    'tell application "Google Chrome"',
-    '  activate',
-    '  set found to false',
-    '  set windowCount to count of windows',
-    '  repeat with i from 1 to windowCount',
-    '    set currentWindow to window i',
-    '    set tabCount to count of tabs of currentWindow',
-    '    repeat with j from 1 to tabCount',
-    '      set currentTab to tab j of currentWindow',
-    '      if URL of currentTab contains "nid.naver.com" then',
-    '        set active tab index of currentWindow to j',
-    '        set index of currentWindow to 1',
-    '        set jsContent to read POSIX file "' + tempJsFile.replace(/\\/g, '/') + '"',
-    '        tell currentTab',
-    '          execute javascript jsContent',
-    '        end tell',
-    '        set found to true',
-    '        exit repeat',
-    '      end if',
-    '    end repeat',
-    '    if found then exit repeat',
-    '  end repeat',
-    '  if found then',
-    '    return "success"',
-    '  else',
-    '    return "not_found"',
-    '  end if',
-    'end tell'
-  ];
-
+  // Create browser-specific AppleScript
+  const appleScriptLines = generateBrowserScript(browserConfig, tempJsFile, false);
   const appleScript = appleScriptLines.join('\n');
 
   try {
@@ -264,48 +421,22 @@ async function triggerAutoFill() {
 
     return result;
   } catch (error) {
-    console.error('AppleScript execution failed:', error.message);
+    console.error(`AppleScript execution failed for ${browserConfig.appName}:`, error.message);
     return 'error';
   }
 }
 
 async function injectOTPToPage(otpCode) {
+  // 브라우저 설정 가져오기
+  const browserConfig = getBrowserConfig();
+  
   const injectionJs = `window.autoFillOTP("${otpCode}");`;
   
   const tempJsFile = path.join(__dirname, '.temp_otp_inject.js');
   fs.writeFileSync(tempJsFile, injectionJs, 'utf8');
 
-  const appleScriptLines = [
-    'tell application "Google Chrome"',
-    '  activate',
-    '  set found to false',
-    '  set windowCount to count of windows',
-    '  repeat with i from 1 to windowCount',
-    '    set currentWindow to window i',
-    '    set tabCount to count of tabs of currentWindow',
-    '    repeat with j from 1 to tabCount',
-    '      set currentTab to tab j of currentWindow',
-    '      if URL of currentTab contains "nid.naver.com" then',
-    '        set active tab index of currentWindow to j',
-    '        set index of currentWindow to 1',
-    '        set jsContent to read POSIX file "' + tempJsFile.replace(/\\/g, '/') + '"',
-    '        tell currentTab',
-    '          execute javascript jsContent',
-    '        end tell',
-    '        set found to true',
-    '        exit repeat',
-    '      end if',
-    '    end repeat',
-    '    if found then exit repeat',
-    '  end repeat',
-    '  if found then',
-    '    return "success"',
-    '  else',
-    '    return "not_found"',
-    '  end if',
-    'end tell'
-  ];
-
+  // Create browser-specific AppleScript
+  const appleScriptLines = generateBrowserScript(browserConfig, tempJsFile, true);
   const appleScript = appleScriptLines.join('\n');
 
   try {
@@ -322,7 +453,7 @@ async function injectOTPToPage(otpCode) {
 
     return result;
   } catch (error) {
-    console.error('OTP injection failed:', error.message);
+    console.error(`OTP injection failed for ${browserConfig.appName}:`, error.message);
     return 'error';
   }
 }
@@ -367,16 +498,19 @@ async function main() {
   try {
     console.log('🎯 Naver Auto-Fill Complete Process Starting...\n');
     
+    // 브라우저 설정 가져오기
+    const browserConfig = getBrowserConfig();
+    
     // Step 1: 기본 개인정보 자동완성 트리거
     const fillResult = await triggerAutoFill();
     
     if (fillResult === 'not_found') {
-      console.log('❌ No nid.naver.com tab found. Please open nid.naver.com in Chrome first');
+      console.log(`❌ No nid.naver.com tab found in ${browserConfig.appName}. Please open nid.naver.com in ${browserConfig.appName} first`);
       return;
     } else if (fillResult === 'success') {
       console.log('✅ Step 1 Complete: Personal info auto-fill triggered');
     } else {
-      console.log('❌ Failed to trigger auto-fill. Please check Chrome connection');
+      console.log(`❌ Failed to trigger auto-fill. Please check ${browserConfig.appName} connection`);
       return;
     }
     
@@ -410,7 +544,7 @@ async function main() {
           console.log('✅ Step 3 Complete: OTP auto-filled successfully!');
           console.log('🎉 All steps completed! Naver verification should be done.');
         } else if (otpResult === 'not_found') {
-          console.log('❌ nid.naver.com tab not found for OTP injection');
+          console.log(`❌ nid.naver.com tab not found in ${browserConfig.appName} for OTP injection`);
         } else {
           console.log('❌ Failed to inject OTP. You may need to enter it manually');
         }
